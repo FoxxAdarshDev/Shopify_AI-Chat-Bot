@@ -111,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clean shop parameter (remove .myshopify.com if present)
       const cleanShop = shop.replace('.myshopify.com', '');
       const storeData = await shopifyService.handleCallback(code, shop);
-      const store = await storage.createStore(storeData);
+      const store = await storage.upsertStore(storeData);
       
       // Start initial data sync
       await shopifyService.syncStoreData(store.id, store.accessToken, cleanShop);

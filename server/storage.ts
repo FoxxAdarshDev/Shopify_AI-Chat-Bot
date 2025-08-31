@@ -108,6 +108,30 @@ export class DatabaseStorage implements IStorage {
     return store;
   }
 
+  async upsertStore(insertStore: InsertStore): Promise<Store> {
+    // Check if store already exists
+    const existing = await this.getStoreByDomain(insertStore.shopifyDomain);
+    
+    if (existing) {
+      // Update existing store with new token and reactivate
+      const [updated] = await db.update(stores)
+        .set({
+          accessToken: insertStore.accessToken,
+          storeName: insertStore.storeName,
+          shopifyStoreId: insertStore.shopifyStoreId,
+          isActive: true,
+          installedAt: new Date(),
+          settings: insertStore.settings
+        })
+        .where(eq(stores.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Create new store
+      return await this.createStore(insertStore);
+    }
+  }
+
   async updateStoreLastSync(storeId: string): Promise<void> {
     await db.update(stores)
       .set({ lastSyncAt: new Date() })
