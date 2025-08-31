@@ -20,6 +20,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/app" component={Dashboard} />
       <Route path="/chat-management" component={ChatManagement} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/store-sync" component={StoreSync} />
