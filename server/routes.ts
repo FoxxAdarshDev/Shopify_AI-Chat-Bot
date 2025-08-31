@@ -32,6 +32,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // App installation page - this is where Partner Dashboard redirects
+  app.get('/install', async (req, res) => {
+    try {
+      const { shop } = req.query;
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).send('Missing shop parameter. Please install from Shopify admin.');
+      }
+      
+      // Clean shop parameter (remove .myshopify.com if present)
+      const cleanShop = shop.replace('.myshopify.com', '');
+      
+      // Redirect to OAuth flow
+      const authUrl = await shopifyService.getAuthUrl(cleanShop);
+      res.redirect(authUrl);
+    } catch (error) {
+      console.error('App install error:', error);
+      res.status(500).send('Installation failed. Please try again.');
+    }
+  });
+
   // Shopify OAuth routes
   app.get('/api/auth/shopify', async (req, res) => {
     try {
@@ -62,9 +82,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start initial data sync
       await shopifyService.syncStoreData(store.id, store.accessToken, shop);
       
-      // Redirect back to Shopify admin where app will be embedded
-      const shopifyAdminUrl = `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE || 'store-ai-chat-bot'}`;
-      res.redirect(shopifyAdminUrl);
+      // Redirect to app in Shopify admin with proper host parameter
+      const host = Buffer.from(`${shop}.myshopify.com`).toString('base64');
+      const redirectUrl = `https://${shop}.myshopify.com/admin/apps/ai-chat-support?host=${host}`;
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Shopify callback error:', error);
       res.status(500).json({ error: 'Installation failed' });
