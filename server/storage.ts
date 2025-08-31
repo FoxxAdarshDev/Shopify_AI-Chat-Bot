@@ -17,6 +17,7 @@ export interface IStorage {
   // Store methods
   getStore(id: string): Promise<Store | undefined>;
   getStoreByDomain(domain: string): Promise<Store | undefined>;
+  getActiveStores(): Promise<Store[]>;
   createStore(store: InsertStore): Promise<Store>;
   updateStoreLastSync(storeId: string): Promise<void>;
   deactivateStore(domain: string): Promise<void>;
@@ -88,6 +89,12 @@ export class DatabaseStorage implements IStorage {
   async getStoreByDomain(domain: string): Promise<Store | undefined> {
     const [store] = await db.select().from(stores).where(eq(stores.shopifyDomain, domain));
     return store || undefined;
+  }
+
+  async getActiveStores(): Promise<Store[]> {
+    return await db.select().from(stores)
+      .where(eq(stores.isActive, true))
+      .orderBy(desc(stores.installedAt));
   }
 
   async createStore(insertStore: InsertStore): Promise<Store> {

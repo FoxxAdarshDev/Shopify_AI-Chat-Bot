@@ -70,6 +70,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Store management routes
+  app.get('/api/stores/current', async (req, res) => {
+    try {
+      const { shop } = req.query;
+      let store;
+      
+      if (shop && typeof shop === 'string') {
+        // Get store by Shopify domain
+        store = await storage.getStoreByDomain(shop);
+      } else {
+        // For development/demo, get the first active store
+        // In production, this should be determined by session/auth
+        const stores = await storage.getActiveStores();
+        store = stores[0];
+      }
+      
+      if (!store) {
+        return res.status(404).json({ error: 'No store found. Please install the app first.' });
+      }
+      
+      res.json(store);
+    } catch (error) {
+      console.error('Get current store error:', error);
+      res.status(500).json({ error: 'Failed to fetch store' });
+    }
+  });
+
+  app.get('/api/stores/current/sync-status', async (req, res) => {
+    try {
+      const { shop } = req.query;
+      let store;
+      
+      if (shop && typeof shop === 'string') {
+        store = await storage.getStoreByDomain(shop);
+      } else {
+        const stores = await storage.getActiveStores();
+        store = stores[0];
+      }
+      
+      if (!store) {
+        return res.status(404).json({ error: 'No store found' });
+      }
+      
+      const syncStatus = await storage.getStoreSyncStatus(store.id);
+      res.json(syncStatus);
+    } catch (error) {
+      console.error('Get sync status error:', error);
+      res.status(500).json({ error: 'Failed to fetch sync status' });
+    }
+  });
+
   app.get('/api/stores/:storeId', async (req, res) => {
     try {
       const store = await storage.getStore(req.params.storeId);
