@@ -12,13 +12,36 @@ import { useState } from "react";
 export default function Dashboard() {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
-  const { data: analytics, isLoading } = useQuery<DashboardAnalytics>({
-    queryKey: ['/api/analytics/dashboard'],
-    refetchInterval: 30000 // Refetch every 30 seconds for live data
-  });
+  // Get shop parameter from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const shop = urlParams.get('shop');
 
   const { data: store } = useQuery<Store>({
-    queryKey: ['/api/stores/current']
+    queryKey: ['/api/stores/current', shop],
+    queryFn: async () => {
+      const url = shop 
+        ? `/api/stores/current?shop=${encodeURIComponent(shop)}`
+        : '/api/stores/current';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch store');
+      }
+      return response.json();
+    }
+  });
+
+  const { data: analytics, isLoading } = useQuery<DashboardAnalytics>({
+    queryKey: ['/api/analytics/dashboard', store?.id],
+    queryFn: async () => {
+      if (!store?.id) return null;
+      const response = await fetch(`/api/analytics/dashboard?storeId=${store.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch analytics');
+      }
+      return response.json();
+    },
+    enabled: !!store?.id,
+    refetchInterval: 30000 // Refetch every 30 seconds for live data
   });
 
   const handleSync = async () => {
