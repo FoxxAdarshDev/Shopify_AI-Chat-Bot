@@ -62,7 +62,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start initial data sync
       await shopifyService.syncStoreData(store.id, store.accessToken, shop);
       
-      res.redirect(`/?shop=${shop}&installed=true`);
+      // Redirect back to Shopify admin where app will be embedded
+      const shopifyAdminUrl = `https://${shop}/admin/apps/${process.env.SHOPIFY_APP_HANDLE || 'store-ai-chat-bot'}`;
+      res.redirect(shopifyAdminUrl);
     } catch (error) {
       console.error('Shopify callback error:', error);
       res.status(500).json({ error: 'Installation failed' });
