@@ -122,6 +122,28 @@ export const aiInteractions = pgTable("ai_interactions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// App configuration table
+export const configurations = pgTable("configurations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  storeId: uuid("store_id").references(() => stores.id),
+  zaiApiKey: text("zai_api_key"),
+  zaiModel: text("zai_model").default("glm-4.5-flash").notNull(),
+  maxContextLength: integer("max_context_length").default(4000).notNull(),
+  chatWidgetPosition: text("chat_widget_position").default("bottom-right").notNull(),
+  storeDataRestriction: boolean("store_data_restriction").default(true).notNull(),
+  chatWidgetColor: text("chat_widget_color").default("#3B82F6"),
+  enabledPages: text("enabled_pages").array().default(["home", "product"]).notNull(),
+  autoResponseEnabled: boolean("auto_response_enabled").default(true).notNull(),
+  businessHours: jsonb("business_hours").default({
+    enabled: false,
+    start: "09:00",
+    end: "17:00",
+    timezone: "UTC"
+  }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const storeRelations = relations(stores, ({ many }) => ({
   products: many(products),
@@ -129,6 +151,11 @@ export const storeRelations = relations(stores, ({ many }) => ({
   pages: many(pages),
   blogPosts: many(blogPosts),
   conversations: many(conversations),
+  configurations: many(configurations),
+}));
+
+export const configurationRelations = relations(configurations, ({ one }) => ({
+  store: one(stores, { fields: [configurations.storeId], references: [stores.id] }),
 }));
 
 export const productRelations = relations(products, ({ one }) => ({
@@ -173,6 +200,7 @@ export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({ id: tru
 export const insertConversationSchema = createInsertSchema(conversations).omit({ id: true, startedAt: true, lastMessageAt: true });
 export const insertMessageSchema = createInsertSchema(messages).omit({ id: true, timestamp: true });
 export const insertAiInteractionSchema = createInsertSchema(aiInteractions).omit({ id: true, createdAt: true });
+export const insertConfigurationSchema = createInsertSchema(configurations).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -193,3 +221,5 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type AiInteraction = typeof aiInteractions.$inferSelect;
 export type InsertAiInteraction = z.infer<typeof insertAiInteractionSchema>;
+export type Configuration = typeof configurations.$inferSelect;
+export type InsertConfiguration = z.infer<typeof insertConfigurationSchema>;

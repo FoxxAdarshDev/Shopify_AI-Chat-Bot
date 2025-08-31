@@ -1,9 +1,9 @@
 import { 
-  users, stores, products, collections, pages, blogPosts, conversations, messages, aiInteractions,
+  users, stores, products, collections, pages, blogPosts, conversations, messages, aiInteractions, configurations,
   type User, type InsertUser, type Store, type InsertStore, type Product, type InsertProduct,
   type Collection, type InsertCollection, type Page, type InsertPage, type BlogPost, type InsertBlogPost,
   type Conversation, type InsertConversation, type Message, type InsertMessage, 
-  type AiInteraction, type InsertAiInteraction
+  type AiInteraction, type InsertAiInteraction, type Configuration, type InsertConfiguration
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, ilike, sql, count, avg } from "drizzle-orm";
@@ -61,6 +61,11 @@ export interface IStorage {
   getChatPerformance(storeId: string, period: string): Promise<any>;
   getConversationStats(storeId: string): Promise<any>;
   getStoreSyncStatus(storeId: string): Promise<any>;
+
+  // Configuration methods
+  getConfiguration(storeId?: string): Promise<Configuration | undefined>;
+  createConfiguration(config: InsertConfiguration): Promise<Configuration>;
+  updateConfiguration(storeId: string | undefined, config: Partial<InsertConfiguration>): Promise<Configuration>;
 
   // Search methods
   searchStoreData(storeId: string, query: string, limit?: number): Promise<any>;
@@ -492,6 +497,59 @@ export class DatabaseStorage implements IStorage {
       pages: searchPages,
       blogPosts: searchBlogPosts
     };
+  }
+
+  async getConfiguration(storeId?: string): Promise<Configuration | undefined> {
+    const query = db.select().from(configurations);
+    
+    if (storeId) {
+      // Get store-specific configuration
+      const [config] = await query.where(eq(configurations.storeId, storeId));
+      if (config) return config;
+    }
+    
+    // Fall back to global configuration (where storeId is null)
+    const [globalConfig] = await query.where(sql`${configurations.storeId} IS NULL`);
+    return globalConfig || undefined;
+  }
+
+  async createConfiguration(insertConfig: InsertConfiguration): Promise<Configuration> {
+    const [config] = await db.insert(configurations).values(insertConfig).returning();
+    return config;
+  }
+
+  async updateConfiguration(storeId: string | undefined, updateConfig: Partial<InsertConfiguration>): Promise<Configuration> {
+    // First try to get existing configuration
+    const existing = await this.getConfiguration(storeId);
+    
+    if (existing) {
+      // Update existing configuration
+      const [updated] = await db.update(configurations)
+        .set({ ...updateConfig, updatedAt: new Date() })
+        .where(eq(configurations.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Create new configuration
+      const newConfig: InsertConfiguration = {
+        storeId: storeId || null,
+        zaiModel: "glm-4.5-flash",
+        maxContextLength: 4000,
+        chatWidgetPosition: "bottom-right",
+        storeDataRestriction: true,
+        chatWidgetColor: "#3B82F6",
+        enabledPages: ["home", "product"],
+        autoResponseEnabled: true,
+        businessHours: {
+          enabled: false,
+          start: "09:00",
+          end: "17:00",
+          timezone: "UTC"
+        },
+        ...updateConfig
+      };
+      return await this.createConfiguration(newConfig);
+    }
   }
 }
 

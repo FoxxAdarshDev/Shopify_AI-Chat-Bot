@@ -340,13 +340,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configuration routes
   app.get('/api/config', async (req, res) => {
     try {
-      const config = {
-        zaiModel: process.env.ZAI_MODEL || 'glm-4.5-flash',
-        maxContextLength: parseInt(process.env.MAX_CONTEXT_LENGTH || '4000'),
-        chatWidgetPosition: process.env.CHAT_WIDGET_POSITION || 'bottom-right',
-        storeDataRestriction: process.env.STORE_DATA_RESTRICTION === 'true'
-      };
-      res.json(config);
+      const { shop } = req.query;
+      let storeId: string | undefined = undefined;
+      
+      if (shop && typeof shop === 'string') {
+        const cleanShop = shop.replace('.myshopify.com', '');
+        const store = await storage.getStoreByDomain(cleanShop);
+        storeId = store?.id;
+      }
+      
+      const config = await storage.getConfiguration(storeId);
+      
+      if (config) {
+        res.json({
+          zaiModel: config.zaiModel,
+          maxContextLength: config.maxContextLength,
+          chatWidgetPosition: config.chatWidgetPosition,
+          storeDataRestriction: config.storeDataRestriction,
+          chatWidgetColor: config.chatWidgetColor,
+          enabledPages: config.enabledPages,
+          autoResponseEnabled: config.autoResponseEnabled,
+          businessHours: config.businessHours
+        });
+      } else {
+        // Return default configuration if none exists
+        res.json({
+          zaiModel: 'glm-4.5-flash',
+          maxContextLength: 4000,
+          chatWidgetPosition: 'bottom-right',
+          storeDataRestriction: true,
+          chatWidgetColor: '#3B82F6',
+          enabledPages: ['home', 'product'],
+          autoResponseEnabled: true,
+          businessHours: {
+            enabled: false,
+            start: '09:00',
+            end: '17:00',
+            timezone: 'UTC'
+          }
+        });
+      }
     } catch (error) {
       console.error('Get config error:', error);
       res.status(500).json({ error: 'Failed to fetch configuration' });
@@ -365,20 +398,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/config', async (req, res) => {
     try {
+      const { shop } = req.query;
       const { zaiApiKey, databaseUrl, shopifyApiKey, shopifyApiSecret, ...otherConfig } = req.body;
       
-      // In a real implementation, you'd save these to a secure configuration store
-      // For now, we'll just validate the structure
+      let storeId: string | undefined = undefined;
+      
+      if (shop && typeof shop === 'string') {
+        const cleanShop = shop.replace('.myshopify.com', '');
+        const store = await storage.getStoreByDomain(cleanShop);
+        storeId = store?.id;
+      }
+      
       const configSchema = z.object({
+        zaiApiKey: z.string().optional(),
         zaiModel: z.string().optional(),
         maxContextLength: z.number().min(1000).max(32000).optional(),
         chatWidgetPosition: z.enum(['bottom-right', 'bottom-left', 'top-right', 'top-left']).optional(),
-        storeDataRestriction: z.boolean().optional()
+        storeDataRestriction: z.boolean().optional(),
+        chatWidgetColor: z.string().optional(),
+        enabledPages: z.array(z.string()).optional(),
+        autoResponseEnabled: z.boolean().optional(),
+        businessHours: z.object({
+          enabled: z.boolean(),
+          start: z.string(),
+          end: z.string(),
+          timezone: z.string()
+        }).optional()
       });
       
       const validatedConfig = configSchema.parse(otherConfig);
       
-      res.json({ message: 'Configuration updated successfully', config: validatedConfig });
+      // Save the configuration to the database
+      const savedConfig = await storage.updateConfiguration(storeId, {
+        ...validatedConfig,
+        zaiApiKey: zaiApiKey || undefined
+      });
+      
+      res.json({ 
+        message: 'Configuration updated successfully', 
+        config: {
+          zaiModel: savedConfig.zaiModel,
+          maxContextLength: savedConfig.maxContextLength,
+          chatWidgetPosition: savedConfig.chatWidgetPosition,
+          storeDataRestriction: savedConfig.storeDataRestriction,
+          chatWidgetColor: savedConfig.chatWidgetColor,
+          enabledPages: savedConfig.enabledPages,
+          autoResponseEnabled: savedConfig.autoResponseEnabled,
+          businessHours: savedConfig.businessHours
+        }
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: 'Invalid configuration data', details: error.errors });
