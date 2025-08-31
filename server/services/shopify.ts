@@ -52,7 +52,9 @@ class ShopifyService {
 
   getAuthUrl(shop: string): string {
     const state = crypto.randomBytes(16).toString('hex');
-    const authUrl = new URL(`https://${shop}.myshopify.com/admin/oauth/authorize`);
+    // Clean shop parameter (remove .myshopify.com if present)
+    const cleanShop = shop.replace('.myshopify.com', '');
+    const authUrl = new URL(`https://${cleanShop}.myshopify.com/admin/oauth/authorize`);
     
     authUrl.searchParams.set('client_id', this.apiKey);
     authUrl.searchParams.set('scope', this.scopes);
@@ -63,11 +65,13 @@ class ShopifyService {
   }
 
   async handleCallback(code: string, shop: string): Promise<InsertStore> {
-    const accessToken = await this.exchangeCodeForToken(code, shop);
-    const shopData = await this.getShopData(shop, accessToken);
+    // Clean shop parameter (remove .myshopify.com if present)
+    const cleanShop = shop.replace('.myshopify.com', '');
+    const accessToken = await this.exchangeCodeForToken(code, cleanShop);
+    const shopData = await this.getShopData(cleanShop, accessToken);
     
     return {
-      shopifyDomain: shop,
+      shopifyDomain: cleanShop,
       shopifyStoreId: shopData.id.toString(),
       storeName: shopData.name,
       accessToken,
@@ -81,6 +85,7 @@ class ShopifyService {
   }
 
   private async exchangeCodeForToken(code: string, shop: string): Promise<string> {
+    // Shop parameter should already be cleaned by caller
     const response = await fetch(`https://${shop}.myshopify.com/admin/oauth/access_token`, {
       method: 'POST',
       headers: {
@@ -102,6 +107,7 @@ class ShopifyService {
   }
 
   private async getShopData(shop: string, accessToken: string): Promise<any> {
+    // Shop parameter should already be cleaned by caller
     const response = await fetch(`https://${shop}.myshopify.com/admin/api/2023-10/shop.json`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -119,18 +125,20 @@ class ShopifyService {
   async syncStoreData(storeId: string, accessToken: string, shop: string): Promise<void> {
     try {
       console.log(`Starting data sync for store ${storeId}`);
+      // Clean shop parameter (remove .myshopify.com if present)
+      const cleanShop = shop.replace('.myshopify.com', '');
       
       // Sync products
-      await this.syncProducts(storeId, accessToken, shop);
+      await this.syncProducts(storeId, accessToken, cleanShop);
       
       // Sync collections
-      await this.syncCollections(storeId, accessToken, shop);
+      await this.syncCollections(storeId, accessToken, cleanShop);
       
       // Sync pages
-      await this.syncPages(storeId, accessToken, shop);
+      await this.syncPages(storeId, accessToken, cleanShop);
       
       // Sync blog articles
-      await this.syncBlogArticles(storeId, accessToken, shop);
+      await this.syncBlogArticles(storeId, accessToken, cleanShop);
       
       // Update last sync time
       await storage.updateStoreLastSync(storeId);
@@ -143,6 +151,7 @@ class ShopifyService {
   }
 
   private async syncProducts(storeId: string, accessToken: string, shop: string): Promise<void> {
+    // Shop parameter should already be cleaned by caller
     let hasNextPage = true;
     let pageInfo = '';
     
@@ -198,6 +207,7 @@ class ShopifyService {
   }
 
   private async syncCollections(storeId: string, accessToken: string, shop: string): Promise<void> {
+    // Shop parameter should already be cleaned by caller
     const response = await fetch(`https://${shop}.myshopify.com/admin/api/2023-10/custom_collections.json?limit=250`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -227,6 +237,7 @@ class ShopifyService {
   }
 
   private async syncPages(storeId: string, accessToken: string, shop: string): Promise<void> {
+    // Shop parameter should already be cleaned by caller
     const response = await fetch(`https://${shop}.myshopify.com/admin/api/2023-10/pages.json?limit=250`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
@@ -255,6 +266,7 @@ class ShopifyService {
   }
 
   private async syncBlogArticles(storeId: string, accessToken: string, shop: string): Promise<void> {
+    // Shop parameter should already be cleaned by caller
     // First get all blogs
     const blogsResponse = await fetch(`https://${shop}.myshopify.com/admin/api/2023-10/blogs.json`, {
       headers: {

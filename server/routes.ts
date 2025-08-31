@@ -116,7 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Shop parameter is required' });
       }
       
-      const authUrl = await shopifyService.getAuthUrl(shop);
+      // Clean shop parameter (remove .myshopify.com if present)
+      const cleanShop = shop.replace('.myshopify.com', '');
+      const authUrl = await shopifyService.getAuthUrl(cleanShop);
       res.redirect(authUrl);
     } catch (error) {
       console.error('Shopify auth error:', error);
@@ -132,16 +134,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required parameters' });
       }
 
+      // Clean shop parameter (remove .myshopify.com if present)
+      const cleanShop = shop.replace('.myshopify.com', '');
       const storeData = await shopifyService.handleCallback(code, shop);
       const store = await storage.createStore(storeData);
       
       // Start initial data sync
-      await shopifyService.syncStoreData(store.id, store.accessToken, shop);
+      await shopifyService.syncStoreData(store.id, store.accessToken, cleanShop);
       
       // Redirect to app in Shopify admin with proper host parameter
-      const host = Buffer.from(`${shop}.myshopify.com`).toString('base64');
+      const host = Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
       const appHandle = 'store-ai-chat-bot'; // This should match your app handle in Partner Dashboard
-      const redirectUrl = `https://${shop}.myshopify.com/admin/apps/${appHandle}?shop=${shop}&host=${host}`;
+      const redirectUrl = `https://${cleanShop}.myshopify.com/admin/apps/${appHandle}?shop=${cleanShop}&host=${host}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Shopify callback error:', error);
@@ -156,8 +160,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let store;
       
       if (shop && typeof shop === 'string') {
-        // Get store by Shopify domain
-        store = await storage.getStoreByDomain(shop);
+        // Clean shop parameter and get store by Shopify domain
+        const cleanShop = shop.replace('.myshopify.com', '');
+        store = await storage.getStoreByDomain(cleanShop);
       } else {
         // For development/demo, get the first active store
         // In production, this should be determined by session/auth
@@ -182,7 +187,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let store;
       
       if (shop && typeof shop === 'string') {
-        store = await storage.getStoreByDomain(shop);
+        // Clean shop parameter
+        const cleanShop = shop.replace('.myshopify.com', '');
+        store = await storage.getStoreByDomain(cleanShop);
       } else {
         const stores = await storage.getActiveStores();
         store = stores[0];

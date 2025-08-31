@@ -1,0 +1,41 @@
+5:04:58 PM [express] GET /api/auth/shopify/callback 500 in 16ms :: {"error":"Installation failed"}
+==> Detected service running on port 10000
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+Shopify callback error: TypeError: fetch failed
+    at node:internal/deps/undici/undici:13510:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async ShopifyService.exchangeCodeForToken (file:///opt/render/project/src/dist/index.js:515:22)
+    at async ShopifyService.handleCallback (file:///opt/render/project/src/dist/index.js:499:25)
+    at async file:///opt/render/project/src/dist/index.js:1115:25 {
+  [cause]: Error [ERR_TLS_CERT_ALTNAME_INVALID]: Hostname/IP does not match certificate's altnames: Host: customunctionality.myshopify.com.myshopify.com. is not in the cert's altnames: DNS:myshopify.com, DNS:*.myshopify.com
+      at Object.checkServerIdentity (node:tls:386:12)
+      at TLSSocket.onConnectSecure (node:_tls_wrap:1689:27)
+      at TLSSocket.emit (node:events:518:28)
+      at TLSSocket._finishInit (node:_tls_wrap:1078:8)
+      at ssl.onhandshakedone (node:_tls_wrap:864:12) {
+    code: 'ERR_TLS_CERT_ALTNAME_INVALID',
+    reason: "Host: customunctionality.myshopify.com.myshopify.com. is not in the cert's altnames: DNS:myshopify.com, DNS:*.myshopify.com",
+    host: 'customunctionality.myshopify.com.myshopify.com',
+    cert: {
+      subject: [Object: null prototype],
+      issuer: [Object: null prototype],
+      subjectaltname: 'DNS:myshopify.com, DNS:*.myshopify.com',
+      infoAccess: [Object: null prototype],
+      ca: false,
+      bits: 256,
+      pubkey: <Buffer 04 de 71 e2 26 42 48 c1 2d 2b 15 db 80 eb ec 57 49 1d 4c 2e 35 d1 76 75 8f 92 86 27 b5 af e0 82 82 67 80 79 f9 0d 53 c0 b2 ff 42 b5 d2 0a 30 d1 29 09 ... 15 more bytes>,
+      asn1Curve: 'prime256v1',
+      nistCurve: 'P-256',
+      valid_from: 'Nov 15 00:18:35 2024 GMT',
+      valid_to: 'Nov 15 00:22:23 2025 GMT',
+      fingerprint: 'B1:C8:78:E7:C2:BF:3F:F3:98:10:7B:EC:E0:16:66:F4:D7:33:9E:98',
+      fingerprint256: '4E:50:23:68:1B:19:46:EC:EE:32:81:A4:D3:1C:B7:FD:F2:EC:01:80:CD:82:1B:CB:41:D9:D8:5E:72:0A:C2:74',
+      fingerprint512: '60:C7:FE:8D:AE:34:AD:9F:64:8A:0D:BA:CA:7B:27:25:0E:47:DE:ED:7D:64:B0:67:74:B0:31:A6:CC:10:47:2A:73:4E:4A:96:07:61:40:A4:98:C2:FD:80:92:E7:51:3C:C6:EA:EA:C4:39:8A:A3:D6:42:B9:A5:6E:9E:C0:9E:29',
+      ext_key_usage: [Array],
+      serialNumber: '7232C2336E991DCAD14C2BD0A03A7E68',
+      raw: <Buffer 30 82 04 60 30 82 04 06 a0 03 02 01 02 02 10 72 32 c2 33 6e 99 1d ca d1 4c 2b d0 a0 3a 7e 68 30 0a 06 08 2a 86 48 ce 3d 04 03 02 30 52 31 0b 30 09 06 ... 1074 more bytes>,
+      issuerCertificate: [Object]
+    }
+  }
+}
+5:11:36 PM [express] GET /api/auth/shopify/callback 500 in 27ms :: {"error":"Installation failed"}
