@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 const configSchema = z.object({
   zaiApiKey: z.string().min(1, "Z.AI API key is required"),
   zaiModel: z.enum(["glm-4.5-flash", "glm-4.5", "glm-4.5v"]),
-  databaseUrl: z.string().url("Invalid database URL"),
   shopifyApiKey: z.string().min(1, "Shopify API key is required"),
   shopifyApiSecret: z.string().min(1, "Shopify API secret is required"),
   storeAccessToken: z.string().optional(),
@@ -143,31 +142,6 @@ export default function EnvConfigModal({ isOpen, onClose }: EnvConfigModalProps)
               </div>
             </div>
 
-            {/* Database Configuration */}
-            <div>
-              <h4 className="font-medium mb-4">Database Configuration (Render PostgreSQL)</h4>
-              <FormField
-                control={form.control}
-                name="databaseUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Database URL</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="postgres://username:password@host:port/database" 
-                        {...field}
-                        data-testid="input-database-url"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Get this from your Render database dashboard
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             {/* Shopify Configuration */}
             <div>
