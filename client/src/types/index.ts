@@ -103,6 +103,33 @@ export interface SyncStatus {
   };
 }
 
+export interface Page {
+  id: string;
+  storeId: string;
+  shopifyPageId: string;
+  title: string;
+  content?: string;
+  handle: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BlogPost {
+  id: string;
+  storeId: string;
+  shopifyArticleId: string;
+  title: string;
+  content?: string;
+  excerpt?: string;
+  handle: string;
+  tags: string[];
+  publishedAt?: string;
+  blogId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ChatConfiguration {
   zaiModel: string;
   maxContextLength: number;
