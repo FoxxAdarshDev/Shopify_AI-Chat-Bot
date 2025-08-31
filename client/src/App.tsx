@@ -29,9 +29,21 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const shopFromUrl = urlParams.get('shop');
   const hostFromUrl = urlParams.get('host');
-  const isEmbedded = urlParams.get('embedded') === 'true';
+  const isEmbedded = urlParams.get('embedded') === 'true' || window.top !== window.self;
   const shopFromWindow = (window as any).shopifyShop;
   const shop = shopFromUrl || shopFromWindow;
+  
+  // Debug logging for embedded app
+  if (isEmbedded) {
+    console.log('Embedded app detected:', {
+      shop,
+      shopFromUrl,
+      shopFromWindow,
+      host: hostFromUrl,
+      embedded: isEmbedded,
+      urlParams: Object.fromEntries(urlParams.entries())
+    });
+  }
 
   // Store shop in URL for all subsequent requests
   if (shop && !shopFromUrl) {
