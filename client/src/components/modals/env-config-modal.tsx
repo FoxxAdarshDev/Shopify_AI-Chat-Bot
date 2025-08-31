@@ -15,7 +15,6 @@ const configSchema = z.object({
   zaiModel: z.enum(["glm-4.5-flash", "glm-4.5", "glm-4.5v"]),
   shopifyApiKey: z.string().min(1, "Shopify API key is required"),
   shopifyApiSecret: z.string().min(1, "Shopify API secret is required"),
-  storeAccessToken: z.string().optional(),
   chatWidgetPosition: z.enum(["bottom-right", "bottom-left", "top-right", "top-left"]),
   maxContextLength: z.number().min(1000).max(32000),
   storeDataRestriction: z.boolean()
@@ -184,27 +183,6 @@ export default function EnvConfigModal({ isOpen, onClose }: EnvConfigModalProps)
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="storeAccessToken"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Store Access Token</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="Admin access token for store data" 
-                          {...field}
-                          data-testid="input-store-access-token"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Generated during app installation
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </div>
 

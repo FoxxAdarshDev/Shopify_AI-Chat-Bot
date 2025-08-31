@@ -89,9 +89,9 @@ export default function Sidebar({ store }: SidebarProps) {
       <nav className="flex-1 p-4 space-y-2" data-testid="navigation">
         {navigationItems.map((item) => (
           <Link key={item.href} href={item.href}>
-            <a
+            <span
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2 rounded-md font-medium transition-colors cursor-pointer",
                 location === item.href
                   ? "sidebar-active text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -108,7 +108,7 @@ export default function Sidebar({ store }: SidebarProps) {
               {item.indicator && (
                 <span className="ml-auto w-2 h-2 bg-green-500 rounded-full pulse-animation"></span>
               )}
-            </a>
+            </span>
           </Link>
         ))}
       </nav>
