@@ -24,9 +24,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Database Layer
 - **ORM**: Drizzle ORM for type-safe database operations
-- **Database**: PostgreSQL (configured for Neon serverless)
+- **Database**: PostgreSQL (configured for Render)
 - **Schema Design**: Comprehensive schema covering users, stores, products, collections, pages, blog posts, conversations, messages, and AI interactions
-- **Connection Management**: Connection pooling with @neondatabase/serverless
+- **Connection Management**: Connection pooling with Render PostgreSQL
 
 ## Authentication & Authorization
 - **Shopify OAuth**: Full OAuth 2.0 implementation for Shopify app installation
@@ -48,7 +48,7 @@ Preferred communication style: Simple, everyday language.
 # External Dependencies
 
 ## Database Services
-- **Neon Database**: Serverless PostgreSQL database with connection pooling
+- **Render PostgreSQL**: PostgreSQL database hosted on Render with connection pooling
 - **Drizzle Kit**: Database migrations and schema management
 
 ## Shopify Integration
