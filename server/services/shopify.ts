@@ -47,7 +47,7 @@ interface ShopifyArticle {
 class ShopifyService {
   private readonly apiKey = process.env.SHOPIFY_API_KEY || '';
   private readonly apiSecret = process.env.SHOPIFY_API_SECRET || '';
-  private readonly scopes = 'read_products,read_collections,read_content,read_orders,read_customers';
+  private readonly scopes = 'read_products,read_content,read_orders,read_customers';
   private readonly redirectUri = process.env.SHOPIFY_REDIRECT_URI || 'https://shopify-ai-chat-bot.onrender.com/api/auth/shopify/callback';
 
   getAuthUrl(shop: string): string {
