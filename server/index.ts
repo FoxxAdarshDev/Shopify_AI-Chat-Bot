@@ -6,6 +6,20 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Configure headers for Shopify embedding
+app.use((req, res, next) => {
+  // Remove X-Frame-Options to allow embedding in Shopify admin
+  res.removeHeader('X-Frame-Options');
+  
+  // Set Content Security Policy to allow embedding in Shopify admin
+  res.setHeader(
+    'Content-Security-Policy',
+    "frame-ancestors https://*.myshopify.com https://admin.shopify.com;"
+  );
+  
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
