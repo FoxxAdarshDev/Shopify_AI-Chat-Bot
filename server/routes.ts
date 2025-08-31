@@ -294,6 +294,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route to provide Shopify API key for App Bridge
+  app.get('/api/config/shopify-api-key', async (req, res) => {
+    try {
+      res.json({ apiKey: process.env.SHOPIFY_API_KEY || '' });
+    } catch (error) {
+      console.error('Get Shopify API key error:', error);
+      res.status(500).json({ error: 'Failed to fetch API key' });
+    }
+  });
+
   app.post('/api/config', async (req, res) => {
     try {
       const { zaiApiKey, databaseUrl, shopifyApiKey, shopifyApiSecret, ...otherConfig } = req.body;
