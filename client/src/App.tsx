@@ -25,6 +25,19 @@ function Router() {
 }
 
 function App() {
+  // Get shop parameter from URL or window object (for embedded apps)
+  const urlParams = new URLSearchParams(window.location.search);
+  const shopFromUrl = urlParams.get('shop');
+  const shopFromWindow = (window as any).shopifyShop;
+  const shop = shopFromUrl || shopFromWindow;
+
+  // Store shop in URL for all subsequent requests
+  if (shop && !shopFromUrl) {
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('shop', shop);
+    window.history.replaceState({}, '', newUrl.toString());
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

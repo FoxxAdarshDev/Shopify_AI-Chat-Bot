@@ -12,6 +12,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Add shop parameter to all requests
+  const urlParams = new URLSearchParams(window.location.search);
+  const shop = urlParams.get('shop') || (window as any).shopifyShop;
+  
+  if (shop && !url.includes('shop=')) {
+    const separator = url.includes('?') ? '&' : '?';
+    url = `${url}${separator}shop=${encodeURIComponent(shop)}`;
+  }
+
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -29,7 +38,18 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    let url = queryKey.join("/") as string;
+    
+    // Add shop parameter to all requests
+    const urlParams = new URLSearchParams(window.location.search);
+    const shop = urlParams.get('shop') || (window as any).shopifyShop;
+    
+    if (shop && !url.includes('shop=')) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}shop=${encodeURIComponent(shop)}`;
+    }
+
+    const res = await fetch(url, {
       credentials: "include",
     });
 

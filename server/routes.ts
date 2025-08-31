@@ -32,7 +32,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // App installation page - this is where Partner Dashboard redirects
+  // Main app entry point - this is your App URL in Partner Dashboard
+  app.get('/', async (req, res) => {
+    try {
+      const { shop, host } = req.query;
+      
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).send('Missing shop parameter. Please install from Shopify admin.');
+      }
+      
+      // Clean shop parameter (remove .myshopify.com if present)
+      const cleanShop = shop.replace('.myshopify.com', '');
+      
+      // Check if store is already installed
+      const existingStore = await storage.getStoreByDomain(cleanShop);
+      
+      if (existingStore && existingStore.accessToken) {
+        // Store already installed - serve the embedded app
+        const hostParam = host || Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>AI Chat Support</title>
+            <script src="https://unpkg.com/@shopify/app-bridge@3/umd/index.js"></script>
+            <style>
+              body { margin: 0; padding: 0; }
+              iframe { width: 100%; height: 100vh; border: none; }
+            </style>
+          </head>
+          <body>
+            <script>
+              var AppBridge = window.AppBridge;
+              var app = AppBridge.createApp({
+                apiKey: '${process.env.SHOPIFY_API_KEY}',
+                host: '${hostParam}',
+                forceRedirect: true
+              });
+              
+              // Load the React app in iframe
+              document.body.innerHTML = '<iframe src="/app?shop=${cleanShop}&host=${hostParam}" style="width:100%;height:100vh;border:none;"></iframe>';
+            </script>
+          </body>
+          </html>
+        `);
+      } else {
+        // New installation - start OAuth flow
+        const authUrl = await shopifyService.getAuthUrl(cleanShop);
+        res.redirect(authUrl);
+      }
+    } catch (error) {
+      console.error('App entry error:', error);
+      res.status(500).send('App loading failed. Please try again.');
+    }
+  });
+  
+  // App installation page - legacy endpoint
   app.get('/install', async (req, res) => {
     try {
       const { shop } = req.query;
@@ -84,7 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Redirect to app in Shopify admin with proper host parameter
       const host = Buffer.from(`${shop}.myshopify.com`).toString('base64');
-      const redirectUrl = `https://${shop}.myshopify.com/admin/apps/ai-chat-support?host=${host}`;
+      const appHandle = 'store-ai-chat-bot'; // This should match your app handle in Partner Dashboard
+      const redirectUrl = `https://${shop}.myshopify.com/admin/apps/${appHandle}?shop=${shop}&host=${host}`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Shopify callback error:', error);
@@ -393,6 +450,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Product create webhook error:', error);
       res.status(500).json({ error: 'Failed to process product webhook' });
+    }
+  });
+
+  // Embedded app route - serves the React app
+  app.get('/app', async (req, res) => {
+    try {
+      const { shop, host } = req.query;
+      
+      // Serve the React app for embedded context
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>AI Chat Support</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <script src="https://unpkg.com/@shopify/app-bridge@3/umd/index.js"></script>
+        </head>
+        <body>
+          <div id="root"></div>
+          <script>
+            // Set shop parameter for the app
+            window.shopifyShop = '${shop}';
+            window.shopifyHost = '${host}';
+          </script>
+          <script type="module" src="/src/main.tsx"></script>
+        </body>
+        </html>
+      `;
+      
+      res.send(html);
+    } catch (error) {
+      console.error('Embedded app error:', error);
+      res.status(500).send('Failed to load app');
     }
   });
 
