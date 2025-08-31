@@ -1,12 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { Store } from "@shared/schema";
 
 interface SidebarProps {
-  store?: {
-    name: string;
-    domain: string;
-    status: 'active' | 'inactive';
-  };
+  store?: Store;
 }
 
 export default function Sidebar({ store }: SidebarProps) {
@@ -119,15 +116,15 @@ export default function Sidebar({ store }: SidebarProps) {
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">
-                {store?.name?.charAt(0) || 'S'}
+                {store?.storeName?.charAt(0) || 'S'}
               </span>
             </div>
             <div>
               <p className="font-medium text-sm" data-testid="store-name">
-                {store?.name || 'Store Name'}
+                {store?.storeName || 'Store Name'}
               </p>
               <p className="text-xs text-muted-foreground" data-testid="store-domain">
-                {store?.domain || 'store.myshopify.com'}
+                {store?.shopifyDomain || 'store.myshopify.com'}.myshopify.com
               </p>
             </div>
           </div>
@@ -136,13 +133,13 @@ export default function Sidebar({ store }: SidebarProps) {
             <span 
               className={cn(
                 "px-2 py-1 rounded-full",
-                store?.status === 'active' 
+                store?.isActive 
                   ? "bg-green-100 text-green-800" 
                   : "bg-red-100 text-red-800"
               )}
               data-testid="store-status"
             >
-              {store?.status === 'active' ? 'Active' : 'Inactive'}
+              {store?.isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
         </div>

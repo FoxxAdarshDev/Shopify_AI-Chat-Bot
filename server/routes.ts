@@ -460,34 +460,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Embedded app route - serves the React app
-  app.get('/app', async (req, res) => {
+  // Shopify embedded app context
+  app.get('/app', async (req, res, next) => {
     try {
       const { shop, host } = req.query;
       
-      // Serve the React app for embedded context
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>AI Chat Support</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <script src="https://unpkg.com/@shopify/app-bridge@3/umd/index.js"></script>
-        </head>
-        <body>
-          <div id="root"></div>
-          <script>
-            // Set shop parameter for the app
-            window.shopifyShop = '${shop}';
-            window.shopifyHost = '${host}';
-          </script>
-          <script type="module" src="/src/main.tsx"></script>
-        </body>
-        </html>
-      `;
+      if (!shop || typeof shop !== 'string') {
+        return res.status(400).send('Missing shop parameter. Please install from Shopify admin.');
+      }
       
-      res.send(html);
+      // Set embedded context for React app
+      req.url = '/?embedded=true&shop=' + encodeURIComponent(shop as string) + (host ? '&host=' + encodeURIComponent(host as string) : '');
+      next();
     } catch (error) {
       console.error('Embedded app error:', error);
       res.status(500).send('Failed to load app');

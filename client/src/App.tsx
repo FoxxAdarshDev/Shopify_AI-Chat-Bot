@@ -28,6 +28,8 @@ function App() {
   // Get shop parameter from URL or window object (for embedded apps)
   const urlParams = new URLSearchParams(window.location.search);
   const shopFromUrl = urlParams.get('shop');
+  const hostFromUrl = urlParams.get('host');
+  const isEmbedded = urlParams.get('embedded') === 'true';
   const shopFromWindow = (window as any).shopifyShop;
   const shop = shopFromUrl || shopFromWindow;
 
@@ -35,14 +37,43 @@ function App() {
   if (shop && !shopFromUrl) {
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('shop', shop);
+    if (hostFromUrl) newUrl.searchParams.set('host', hostFromUrl);
+    if (isEmbedded) newUrl.searchParams.set('embedded', 'true');
     window.history.replaceState({}, '', newUrl.toString());
+  }
+
+  // Initialize App Bridge for embedded apps
+  if (isEmbedded && shop && hostFromUrl && typeof window !== 'undefined') {
+    const AppBridge = (window as any).app;
+    if (!AppBridge && (window as any).ShopifyApp) {
+      const app = (window as any).ShopifyApp.createApp({
+        apiKey: document.querySelector('meta[name="shopify-api-key"]')?.getAttribute('content') || '',
+        host: hostFromUrl,
+        forceRedirect: true
+      });
+      (window as any).app = app;
+    }
   }
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Router />
+        {!shop && !isEmbedded ? (
+          <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="text-center max-w-md mx-auto p-6">
+              <h1 className="text-2xl font-bold mb-4">AI Chat Support</h1>
+              <p className="text-muted-foreground mb-4">
+                This app needs to be installed from your Shopify admin.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Missing shop parameter. Please install from Shopify admin.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <Router />
+        )}
       </TooltipProvider>
     </QueryClientProvider>
   );

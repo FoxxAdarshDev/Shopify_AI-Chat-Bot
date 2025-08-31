@@ -6,6 +6,7 @@ import LiveChatPreview from "@/components/chat/live-chat-preview";
 import SyncStatus from "@/components/dashboard/sync-status";
 import EnvConfigModal from "@/components/modals/env-config-modal";
 import { DashboardAnalytics } from "@/types";
+import { Store } from "@shared/schema";
 import { useState } from "react";
 
 export default function Dashboard() {
@@ -16,7 +17,7 @@ export default function Dashboard() {
     refetchInterval: 30000 // Refetch every 30 seconds for live data
   });
 
-  const { data: store } = useQuery({
+  const { data: store } = useQuery<Store>({
     queryKey: ['/api/stores/current']
   });
 
