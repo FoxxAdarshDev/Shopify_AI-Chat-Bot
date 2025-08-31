@@ -95,6 +95,7 @@ class ShopifyService {
         client_id: this.apiKey,
         client_secret: this.apiSecret,
         code,
+        redirect_uri: this.redirectUri
       }),
     });
 

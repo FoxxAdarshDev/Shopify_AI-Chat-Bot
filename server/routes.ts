@@ -116,10 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Start initial data sync
       await shopifyService.syncStoreData(store.id, store.accessToken, cleanShop);
       
-      // Redirect to app in Shopify admin with proper host parameter
+      // Redirect to our embedded app instead of Shopify admin
       const host = Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
-      const appHandle = 'store-ai-chat-bot'; // This should match your app handle in Partner Dashboard
-      const redirectUrl = `https://${cleanShop}.myshopify.com/admin/apps/${appHandle}?shop=${cleanShop}&host=${host}`;
+      const redirectUrl = `https://shopify-ai-chat-bot.onrender.com/app?shop=${cleanShop}&host=${host}&embedded=true`;
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Shopify callback error:', error);
