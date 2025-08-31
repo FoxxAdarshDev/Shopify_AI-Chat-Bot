@@ -461,6 +461,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Widget integration routes
+  app.get('/widget/:storeId.js', async (req, res) => {
+    try {
+      const { storeId } = req.params;
+      const store = await storage.getStore(storeId);
+      
+      if (!store) {
+        return res.status(404).send('// Store not found');
+      }
+      
+      // Get store settings
+      const settings = store.settings as any || {};
+      const widgetConfig = {
+        storeId: store.id,
+        color: settings.widgetColor || '#3B82F6',
+        position: settings.widgetPosition || 'bottom-right',
+        enabledPages: settings.enabledPages || ['home', 'product'],
+        apiUrl: process.env.APP_URL || `https://${req.get('host')}`
+      };
+      
+      // Read widget script template
+      const fs = require('fs');
+      const path = require('path');
+      const scriptPath = path.join(__dirname, 'widget-script.js');
+      let scriptContent = fs.readFileSync(scriptPath, 'utf8');
+      
+      // Replace placeholders with actual config
+      scriptContent = scriptContent
+        .replace('__STORE_ID__', widgetConfig.storeId)
+        .replace('__COLOR__', widgetConfig.color)
+        .replace('__POSITION__', widgetConfig.position)
+        .replace('__ENABLED_PAGES__', JSON.stringify(widgetConfig.enabledPages))
+        .replace('__API_URL__', widgetConfig.apiUrl);
+      
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      res.send(scriptContent);
+    } catch (error) {
+      console.error('Widget script error:', error);
+      res.status(500).send('// Error loading widget');
+    }
+  });
+  
+  // Widget installation instructions
+  app.get('/api/widget/install-instructions/:storeId', async (req, res) => {
+    try {
+      const { storeId } = req.params;
+      const store = await storage.getStore(storeId);
+      
+      if (!store) {
+        return res.status(404).json({ error: 'Store not found' });
+      }
+      
+      const widgetUrl = `${process.env.APP_URL || `https://${req.get('host')}`}/widget/${storeId}.js`;
+      
+      const instructions = {
+        scriptTag: `<script src="${widgetUrl}" async></script>`,
+        instructions: [
+          "Copy the script tag above",
+          "Go to your Shopify admin → Online Store → Themes",
+          "Click 'Actions' → 'Edit code' on your active theme",
+          "Open 'theme.liquid' file",
+          "Paste the script tag before the closing </body> tag",
+          "Save the file",
+          "Visit your storefront to see the chat widget"
+        ],
+        alternativeMethod: {
+          description: "Automatic installation via Theme App Extensions (recommended)",
+          note: "This method requires theme app extensions to be enabled in your app."
+        }
+      };
+      
+      res.json(instructions);
+    } catch (error) {
+      console.error('Widget instructions error:', error);
+      res.status(500).json({ error: 'Failed to get installation instructions' });
+    }
+  });
+  
+  // Update widget settings
+  app.post('/api/widget/settings/:storeId', async (req, res) => {
+    try {
+      const { storeId } = req.params;
+      const { widgetColor, widgetPosition, enabledPages } = req.body;
+      
+      const store = await storage.getStore(storeId);
+      if (!store) {
+        return res.status(404).json({ error: 'Store not found' });
+      }
+      
+      const updatedSettings = {
+        ...store.settings as any,
+        widgetColor,
+        widgetPosition,
+        enabledPages
+      };
+      
+      await storage.updateStoreSettings(storeId, updatedSettings);
+      
+      res.json({ message: 'Widget settings updated successfully' });
+    } catch (error) {
+      console.error('Update widget settings error:', error);
+      res.status(500).json({ error: 'Failed to update widget settings' });
+    }
+  });
+
   // Health check route
   app.get('/api/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });

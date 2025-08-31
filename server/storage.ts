@@ -20,6 +20,7 @@ export interface IStorage {
   getActiveStores(): Promise<Store[]>;
   createStore(store: InsertStore): Promise<Store>;
   updateStoreLastSync(storeId: string): Promise<void>;
+  updateStoreSettings(storeId: string, settings: any): Promise<Store>;
   deactivateStore(domain: string): Promise<void>;
 
   // Product methods
@@ -106,6 +107,14 @@ export class DatabaseStorage implements IStorage {
     await db.update(stores)
       .set({ lastSyncAt: new Date() })
       .where(eq(stores.id, storeId));
+  }
+
+  async updateStoreSettings(storeId: string, settings: any): Promise<Store> {
+    const [store] = await db.update(stores)
+      .set({ settings })
+      .where(eq(stores.id, storeId))
+      .returning();
+    return store;
   }
 
   async deactivateStore(domain: string): Promise<void> {

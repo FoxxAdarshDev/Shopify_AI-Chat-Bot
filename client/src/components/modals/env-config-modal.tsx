@@ -13,11 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 const configSchema = z.object({
   zaiApiKey: z.string().min(1, "Z.AI API key is required"),
   zaiModel: z.enum(["glm-4.5-flash", "glm-4.5", "glm-4.5v"]),
-  shopifyApiKey: z.string().min(1, "Shopify API key is required"),
-  shopifyApiSecret: z.string().min(1, "Shopify API secret is required"),
   chatWidgetPosition: z.enum(["bottom-right", "bottom-left", "top-right", "top-left"]),
   maxContextLength: z.number().min(1000).max(32000),
-  storeDataRestriction: z.boolean()
+  storeDataRestriction: z.boolean(),
+  // Chat widget customization
+  chatWidgetColor: z.string().optional(),
+  chatWidgetIcon: z.string().optional(),
+  enabledPages: z.array(z.enum(["home", "product", "collection", "page", "blog"])).optional()
 });
 
 type ConfigFormData = z.infer<typeof configSchema>;
@@ -37,7 +39,10 @@ export default function EnvConfigModal({ isOpen, onClose }: EnvConfigModalProps)
       zaiModel: "glm-4.5-flash",
       chatWidgetPosition: "bottom-right",
       maxContextLength: 4000,
-      storeDataRestriction: true
+      storeDataRestriction: true,
+      chatWidgetColor: "#3B82F6",
+      chatWidgetIcon: "chat",
+      enabledPages: ["home", "product"]
     }
   });
 
@@ -142,23 +147,34 @@ export default function EnvConfigModal({ isOpen, onClose }: EnvConfigModalProps)
             </div>
 
 
-            {/* Shopify Configuration */}
+            {/* Chat Widget Customization */}
             <div>
-              <h4 className="font-medium mb-4">Shopify Configuration</h4>
+              <h4 className="font-medium mb-4">Chat Widget Customization</h4>
               <div className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="shopifyApiKey"
+                  name="chatWidgetColor"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shopify API Key</FormLabel>
+                      <FormLabel>Widget Primary Color</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Enter your Shopify app API key" 
-                          {...field}
-                          data-testid="input-shopify-api-key"
-                        />
+                        <div className="flex gap-2">
+                          <Input 
+                            type="color" 
+                            className="w-16 h-10 p-1 rounded"
+                            {...field}
+                            data-testid="input-widget-color"
+                          />
+                          <Input 
+                            placeholder="#3B82F6" 
+                            {...field}
+                            data-testid="input-widget-color-text"
+                          />
+                        </div>
                       </FormControl>
+                      <FormDescription>
+                        Choose the primary color for your chat widget
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -166,23 +182,45 @@ export default function EnvConfigModal({ isOpen, onClose }: EnvConfigModalProps)
 
                 <FormField
                   control={form.control}
-                  name="shopifyApiSecret"
+                  name="enabledPages"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Shopify API Secret</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="password" 
-                          placeholder="Enter your Shopify app secret" 
-                          {...field}
-                          data-testid="input-shopify-api-secret"
-                        />
-                      </FormControl>
+                      <FormLabel>Show Chat Widget On</FormLabel>
+                      <FormDescription>
+                        Select which pages should display the chat widget
+                      </FormDescription>
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        {[
+                          { value: "home", label: "Home Page" },
+                          { value: "product", label: "Product Pages" },
+                          { value: "collection", label: "Collection Pages" },
+                          { value: "page", label: "Content Pages" },
+                          { value: "blog", label: "Blog Pages" }
+                        ].map((page) => (
+                          <div key={page.value} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={page.value}
+                              checked={field.value?.includes(page.value as any)}
+                              onCheckedChange={(checked) => {
+                                const current = field.value || [];
+                                if (checked) {
+                                  field.onChange([...current, page.value]);
+                                } else {
+                                  field.onChange(current.filter((v: string) => v !== page.value));
+                                }
+                              }}
+                              data-testid={`checkbox-page-${page.value}`}
+                            />
+                            <label htmlFor={page.value} className="text-sm">
+                              {page.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
               </div>
             </div>
 

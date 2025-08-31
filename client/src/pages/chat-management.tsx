@@ -1,16 +1,40 @@
 import { useQuery } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import { ConversationWithMessages } from "@/types";
+import { Store } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 
 export default function ChatManagement() {
-  const { data: conversations, isLoading } = useQuery<ConversationWithMessages[]>({
-    queryKey: ['/api/conversations'],
-    refetchInterval: 10000
+  // Get shop parameter from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const shop = urlParams.get('shop');
+
+  const { data: store } = useQuery<Store>({
+    queryKey: ['/api/stores/current', shop],
+    queryFn: async () => {
+      const url = shop 
+        ? `/api/stores/current?shop=${encodeURIComponent(shop)}`
+        : '/api/stores/current';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch store');
+      }
+      return response.json();
+    }
   });
 
-  const { data: store } = useQuery({
-    queryKey: ['/api/stores/current']
+  const { data: conversations, isLoading } = useQuery<ConversationWithMessages[]>({
+    queryKey: ['/api/conversations', store?.id],
+    queryFn: async () => {
+      if (!store?.id) return [];
+      const response = await fetch(`/api/conversations?storeId=${store.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch conversations');
+      }
+      return response.json();
+    },
+    enabled: !!store?.id,
+    refetchInterval: 10000
   });
 
   const getStatusColor = (status: string) => {

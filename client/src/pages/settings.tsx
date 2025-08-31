@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ChatConfiguration } from "@/types";
+import { Store } from "@shared/schema";
+import WidgetInstallation from "@/components/widget/widget-installation";
 
 const configSchema = z.object({
   zaiModel: z.enum(["glm-4.5-flash", "glm-4.5", "glm-4.5v"]),
@@ -35,8 +37,22 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: store } = useQuery({
-    queryKey: ['/api/stores/current']
+  // Get shop parameter from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const shop = urlParams.get('shop');
+
+  const { data: store } = useQuery<Store>({
+    queryKey: ['/api/stores/current', shop],
+    queryFn: async () => {
+      const url = shop 
+        ? `/api/stores/current?shop=${encodeURIComponent(shop)}`
+        : '/api/stores/current';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch store');
+      }
+      return response.json();
+    }
   });
 
   const { data: config, isLoading } = useQuery<ChatConfiguration>({
@@ -131,7 +147,7 @@ export default function Settings() {
                 <TabsTrigger value="general" data-testid="tab-general">General</TabsTrigger>
                 <TabsTrigger value="ai" data-testid="tab-ai">AI Configuration</TabsTrigger>
                 <TabsTrigger value="chat" data-testid="tab-chat">Chat Widget</TabsTrigger>
-                <TabsTrigger value="advanced" data-testid="tab-advanced">Advanced</TabsTrigger>
+                <TabsTrigger value="advanced" data-testid="tab-advanced">AI Automation</TabsTrigger>
               </TabsList>
 
               <Form {...form}>
@@ -250,139 +266,260 @@ export default function Settings() {
                   </TabsContent>
 
                   <TabsContent value="chat">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Chat Widget Configuration</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        <FormField
-                          control={form.control}
-                          name="chatWidgetPosition"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Widget Position</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger data-testid="select-widget-position">
-                                    <SelectValue placeholder="Select position" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                                  <SelectItem value="bottom-left">Bottom Left</SelectItem>
-                                  <SelectItem value="top-right">Top Right</SelectItem>
-                                  <SelectItem value="top-left">Top Left</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormDescription>
-                                Choose where the chat widget appears on your store
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="space-y-4">
-                          <h4 className="font-medium">Widget Preview</h4>
-                          <div className="relative bg-muted rounded-lg p-8 h-64 overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50"></div>
-                            <div className="relative h-full">
-                              <div 
-                                className={`absolute w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:scale-110 transition-transform ${
-                                  form.watch('chatWidgetPosition') === 'bottom-right' ? 'bottom-4 right-4' :
-                                  form.watch('chatWidgetPosition') === 'bottom-left' ? 'bottom-4 left-4' :
-                                  form.watch('chatWidgetPosition') === 'top-right' ? 'top-4 right-4' :
-                                  'top-4 left-4'
-                                }`}
-                                data-testid="widget-preview"
-                              >
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                </svg>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <WidgetInstallation store={store} />
                   </TabsContent>
 
                   <TabsContent value="advanced">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Advanced Settings</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
-                            <h4 className="font-medium mb-4">Performance</h4>
+                    <div className="space-y-6">
+                      {/* AI Automation Features */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            AI Automation Features
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Smart Product Recommendations */}
                             <div className="space-y-4">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Response timeout</span>
-                                <Input className="w-24" type="number" defaultValue="30" />
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                  </svg>
+                                  Smart Product Recommendations
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  AI suggests relevant products based on customer conversation context
+                                </p>
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Enable product suggestions</span>
+                                    <Switch defaultChecked data-testid="switch-product-suggestions" />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Max suggestions per conversation</span>
+                                    <Input className="w-16" type="number" defaultValue="3" min="1" max="10" />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Recommendation confidence threshold</span>
+                                    <Select defaultValue="medium">
+                                      <SelectTrigger className="w-28">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low">Low (70%)</SelectItem>
+                                        <SelectItem value="medium">Medium (80%)</SelectItem>
+                                        <SelectItem value="high">High (90%)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Max concurrent chats</span>
-                                <Input className="w-24" type="number" defaultValue="100" />
+                            </div>
+
+                            {/* Intent Detection */}
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="font-medium mb-2 flex items-center gap-2">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  Intelligent Intent Detection
+                                </h4>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Automatically detect customer intent and route conversations accordingly
+                                </p>
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Detect buying intent</span>
+                                    <Switch defaultChecked data-testid="switch-buying-intent" />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Support inquiry routing</span>
+                                    <Switch defaultChecked data-testid="switch-support-routing" />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">Product browsing assistance</span>
+                                    <Switch defaultChecked data-testid="switch-browsing-assistance" />
+                                  </div>
+                                </div>
                               </div>
+                            </div>
+                          </div>
+
+                          {/* Automated Actions */}
+                          <div className="border-t pt-6">
+                            <h4 className="font-medium mb-4 flex items-center gap-2">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                              Automated Customer Actions
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="p-4 border rounded-lg">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h5 className="font-medium text-sm">Cart Recovery</h5>
+                                  <Switch defaultChecked data-testid="switch-cart-recovery" />
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  Send follow-up messages for abandoned carts
+                                </p>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs">Follow-up delay</span>
+                                    <Select defaultValue="30m">
+                                      <SelectTrigger className="w-20 h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="15m">15min</SelectItem>
+                                        <SelectItem value="30m">30min</SelectItem>
+                                        <SelectItem value="1h">1hour</SelectItem>
+                                        <SelectItem value="2h">2hours</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-4 border rounded-lg">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h5 className="font-medium text-sm">Auto-routing</h5>
+                                  <Switch defaultChecked data-testid="switch-auto-routing" />
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  Automatically guide customers to relevant pages
+                                </p>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs">Route confidence</span>
+                                    <Select defaultValue="high">
+                                      <SelectTrigger className="w-20 h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-4 border rounded-lg">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h5 className="font-medium text-sm">Smart Upsells</h5>
+                                  <Switch defaultChecked data-testid="switch-smart-upsells" />
+                                </div>
+                                <p className="text-xs text-muted-foreground mb-3">
+                                  Suggest complementary products intelligently
+                                </p>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-xs">Suggestion timing</span>
+                                    <Select defaultValue="after-interest">
+                                      <SelectTrigger className="w-20 h-8 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="immediate">Immediate</SelectItem>
+                                        <SelectItem value="after-interest">After Interest</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Analytics & Insights */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            AI Performance Monitoring
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="text-center p-4 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-green-600">94%</div>
+                              <div className="text-sm text-muted-foreground">Intent Detection Accuracy</div>
+                            </div>
+                            <div className="text-center p-4 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-blue-600">3.2</div>
+                              <div className="text-sm text-muted-foreground">Avg Products Recommended</div>
+                            </div>
+                            <div className="text-center p-4 bg-muted rounded-lg">
+                              <div className="text-2xl font-bold text-purple-600">67%</div>
+                              <div className="text-sm text-muted-foreground">Automation Success Rate</div>
                             </div>
                           </div>
                           
-                          <div>
-                            <h4 className="font-medium mb-4">Data Management</h4>
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Chat history retention</span>
-                                <Select defaultValue="90d">
-                                  <SelectTrigger className="w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="30d">30 days</SelectItem>
-                                    <SelectItem value="90d">90 days</SelectItem>
-                                    <SelectItem value="1y">1 year</SelectItem>
-                                    <SelectItem value="forever">Forever</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">Auto-archive inactive chats</span>
-                                <Switch defaultChecked />
-                              </div>
-                            </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Enable detailed AI analytics</span>
+                            <Switch defaultChecked data-testid="switch-ai-analytics" />
                           </div>
-                        </div>
+                        </CardContent>
+                      </Card>
 
-                        <div className="pt-6 border-t border-border">
-                          <h4 className="font-medium mb-4 text-destructive">Danger Zone</h4>
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg">
-                              <div>
-                                <p className="font-medium">Reset All Chat Data</p>
-                                <p className="text-sm text-muted-foreground">
-                                  This will permanently delete all conversation history
-                                </p>
+                      {/* Advanced Settings */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>System Settings</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <h4 className="font-medium mb-4">Performance</h4>
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Response timeout</span>
+                                  <Input className="w-24" type="number" defaultValue="30" />
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Max concurrent chats</span>
+                                  <Input className="w-24" type="number" defaultValue="100" />
+                                </div>
                               </div>
-                              <Button variant="destructive" size="sm" data-testid="button-reset-data">
-                                Reset Data
-                              </Button>
                             </div>
                             
-                            <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg">
-                              <div>
-                                <p className="font-medium">Uninstall App</p>
-                                <p className="text-sm text-muted-foreground">
-                                  Remove the app from your store completely
-                                </p>
+                            <div>
+                              <h4 className="font-medium mb-4">Data Management</h4>
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Chat history retention</span>
+                                  <Select defaultValue="90d">
+                                    <SelectTrigger className="w-32">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="30d">30 days</SelectItem>
+                                      <SelectItem value="90d">90 days</SelectItem>
+                                      <SelectItem value="1y">1 year</SelectItem>
+                                      <SelectItem value="forever">Forever</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm">Auto-archive inactive chats</span>
+                                  <Switch defaultChecked />
+                                </div>
                               </div>
-                              <Button variant="destructive" size="sm" data-testid="button-uninstall">
-                                Uninstall
-                              </Button>
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </TabsContent>
 
                   <div className="flex justify-end gap-3 pt-6">
