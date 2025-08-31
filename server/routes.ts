@@ -110,19 +110,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Clean shop parameter (remove .myshopify.com if present)
       const cleanShop = shop.replace('.myshopify.com', '');
-      const storeData = await shopifyService.handleCallback(code, shop);
-      const store = await storage.upsertStore(storeData);
+      console.log('Processing OAuth callback for shop:', cleanShop);
       
-      // Start initial data sync
-      await shopifyService.syncStoreData(store.id, store.accessToken, cleanShop);
+      const storeData = await shopifyService.handleCallback(code, shop);
+      console.log('OAuth successful, creating/updating store');
+      
+      const store = await storage.upsertStore(storeData);
+      console.log('Store updated, starting data sync');
+      
+      // Start initial data sync (make it non-blocking)
+      shopifyService.syncStoreData(store.id, store.accessToken, cleanShop)
+        .catch(error => console.error('Data sync error:', error));
       
       // Redirect to our embedded app instead of Shopify admin
       const host = Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
       const redirectUrl = `https://shopify-ai-chat-bot.onrender.com/app?shop=${cleanShop}&host=${host}&embedded=true`;
+      console.log('Redirecting to:', redirectUrl);
       res.redirect(redirectUrl);
     } catch (error) {
       console.error('Shopify callback error:', error);
-      res.status(500).json({ error: 'Installation failed' });
+      // Provide a more helpful error response with redirect to main app
+      const cleanShop = typeof req.query.shop === 'string' 
+        ? req.query.shop.replace('.myshopify.com', '')
+        : 'error';
+      const host = Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
+      const fallbackUrl = `https://shopify-ai-chat-bot.onrender.com/app?shop=${cleanShop}&host=${host}&embedded=true&error=installation_failed`;
+      res.redirect(fallbackUrl);
     }
   });
 
