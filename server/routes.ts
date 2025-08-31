@@ -47,8 +47,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if store is already installed
       const existingStore = await storage.getStoreByDomain(cleanShop);
       
-      if (existingStore && existingStore.accessToken) {
-        // Store already installed - redirect to embedded app
+      if (existingStore && existingStore.accessToken && existingStore.is_active) {
+        // Store already installed and active - redirect to embedded app
         const hostParam = host || Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
         return res.redirect(`/app?shop=${cleanShop}&host=${hostParam}&embedded=true`);
       } else {

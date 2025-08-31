@@ -124,7 +124,7 @@ export class DatabaseStorage implements IStorage {
 
   async deactivateStore(domain: string): Promise<void> {
     await db.update(stores)
-      .set({ isActive: false })
+      .set({ isActive: false, accessToken: null })
       .where(eq(stores.shopifyDomain, domain));
   }
 
