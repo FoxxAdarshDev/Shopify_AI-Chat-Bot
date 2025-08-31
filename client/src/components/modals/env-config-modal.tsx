@@ -49,7 +49,15 @@ export default function EnvConfigModal({ isOpen, onClose }: EnvConfigModalProps)
   const onSubmit = async (data: ConfigFormData) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/config', {
+      // Get shop parameter from URL for embedded app context
+      const urlParams = new URLSearchParams(window.location.search);
+      const shop = urlParams.get('shop');
+      
+      const apiUrl = shop 
+        ? `/api/config?shop=${encodeURIComponent(shop)}`
+        : '/api/config';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

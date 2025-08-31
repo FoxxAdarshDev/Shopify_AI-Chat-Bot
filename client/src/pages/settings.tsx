@@ -56,7 +56,17 @@ export default function Settings() {
   });
 
   const { data: config, isLoading } = useQuery<ChatConfiguration>({
-    queryKey: ['/api/config']
+    queryKey: ['/api/config', shop],
+    queryFn: async () => {
+      const url = shop 
+        ? `/api/config?shop=${encodeURIComponent(shop)}`
+        : '/api/config';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch configuration');
+      }
+      return response.json();
+    }
   });
 
   const form = useForm<ConfigFormData>({
@@ -78,7 +88,11 @@ export default function Settings() {
 
   const updateConfigMutation = useMutation({
     mutationFn: async (data: ConfigFormData) => {
-      const response = await fetch('/api/config', {
+      const apiUrl = shop 
+        ? `/api/config?shop=${encodeURIComponent(shop)}`
+        : '/api/config';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -97,7 +111,7 @@ export default function Settings() {
         title: "Settings saved",
         description: "Your configuration has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/config'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/config', shop] });
     },
     onError: (error) => {
       toast({
