@@ -20,6 +20,25 @@
           if (metaTag && data.apiKey) {
             metaTag.setAttribute('content', data.apiKey);
           }
+          
+          // Initialize App Bridge if embedded
+          const urlParams = new URLSearchParams(window.location.search);
+          const shop = urlParams.get('shop');
+          const host = urlParams.get('host');
+          const isEmbedded = urlParams.get('embedded') === 'true' || window.top !== window.self;
+          
+          if (isEmbedded && shop && data.apiKey && window.ShopifyApp) {
+            try {
+              window.shopifyApp = window.ShopifyApp.createApp({
+                apiKey: data.apiKey,
+                host: host || btoa(shop + '.myshopify.com'),
+                forceRedirect: true
+              });
+              console.log('Shopify App Bridge initialized successfully');
+            } catch (error) {
+              console.error('App Bridge initialization error:', error);
+            }
+          }
         })
         .catch(console.error);
     </script>

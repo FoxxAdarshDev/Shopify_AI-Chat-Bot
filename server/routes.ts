@@ -48,35 +48,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingStore = await storage.getStoreByDomain(cleanShop);
       
       if (existingStore && existingStore.accessToken) {
-        // Store already installed - serve the embedded app
+        // Store already installed - redirect to embedded app
         const hostParam = host || Buffer.from(`${cleanShop}.myshopify.com`).toString('base64');
-        return res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <title>AI Chat Support</title>
-            <script src="https://unpkg.com/@shopify/app-bridge@3/umd/index.js"></script>
-            <style>
-              body { margin: 0; padding: 0; }
-              iframe { width: 100%; height: 100vh; border: none; }
-            </style>
-          </head>
-          <body>
-            <script>
-              var AppBridge = window.AppBridge;
-              var app = AppBridge.createApp({
-                apiKey: '${process.env.SHOPIFY_API_KEY}',
-                host: '${hostParam}',
-                forceRedirect: true
-              });
-              
-              // Load the React app in iframe
-              document.body.innerHTML = '<iframe src="/app?shop=${cleanShop}&host=${hostParam}" style="width:100%;height:100vh;border:none;"></iframe>';
-            </script>
-          </body>
-          </html>
-        `);
+        return res.redirect(`/app?shop=${cleanShop}&host=${hostParam}&embedded=true`);
       } else {
         // New installation - start OAuth flow
         const authUrl = await shopifyService.getAuthUrl(cleanShop);
@@ -460,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Shopify embedded app context
+  // Shopify embedded app route - serves React app directly
   app.get('/app', async (req, res, next) => {
     try {
       const { shop, host } = req.query;
@@ -469,8 +443,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).send('Missing shop parameter. Please install from Shopify admin.');
       }
       
-      // Set embedded context for React app
-      req.url = '/?embedded=true&shop=' + encodeURIComponent(shop as string) + (host ? '&host=' + encodeURIComponent(host as string) : '');
+      // Clean shop parameter
+      const cleanShop = (shop as string).replace('.myshopify.com', '');
+      
+      // Check if store exists
+      const existingStore = await storage.getStoreByDomain(cleanShop);
+      if (!existingStore || !existingStore.accessToken) {
+        return res.status(400).send('Store not installed. Please install from Shopify admin.');
+      }
+      
+      // Set embedded context and forward to Vite dev server
+      req.url = '/?embedded=true&shop=' + encodeURIComponent(cleanShop) + (host ? '&host=' + encodeURIComponent(host as string) : '');
       next();
     } catch (error) {
       console.error('Embedded app error:', error);
